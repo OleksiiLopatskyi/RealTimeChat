@@ -1,0 +1,35 @@
+﻿@model IEnumerable<Chat>
+@{
+    ViewData["Title"] = "Home Page";
+}
+
+<ul id="people">
+
+</ul>
+
+    @section Scripts{
+        <script>
+            $(document).ready(function () {
+                var usersList = $("#usersList");
+
+                $.ajax({
+                    method: "GET",
+                    url: "https://localhost:44314/api/data/users",
+                    success: function (json) {
+                        $.each(json, function (index, user) {
+                            usersList.append(`<li onclick="CreateChat(${user.id})">${user.username}</li>`);
+                        });
+                    }
+                });
+            });
+            function CreateChat(userId) {
+                $.ajax({
+                    method: "POST",
+                    url: `https://localhost:44314/api/data/start?userId=${userId}`,
+                    success: function (json) {
+
+                    }
+                });
+            }
+        </script>
+    }
