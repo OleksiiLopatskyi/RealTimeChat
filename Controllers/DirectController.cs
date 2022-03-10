@@ -1,4 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
+using RealTimeChat.Hubs;
 using RealTimeChat.Models;
 using RealTimeChat.Models.DatabaseContext;
 using RealTimeChat.Services.Repository;
@@ -13,9 +15,11 @@ namespace RealTimeChat.Controllers
     public class DirectController : Controller
     {
         private readonly IRepository _repository;
-        public DirectController(ChatAppContext shoppingContext)
+        private readonly IHubContext<ChatHub> _hubContext;
+        public DirectController(ChatAppContext shoppingContext,IHubContext<ChatHub> context)
         {
             _repository = new Repository(shoppingContext);
+            _hubContext = context;
         }
 
         public IActionResult Index()
@@ -54,6 +58,7 @@ namespace RealTimeChat.Controllers
             messageViewModel.SenderId = senderId;
             try
             {
+                await _hubContext.Clients.Users(new List<string>() { senderId.ToString(), receiverId.ToString() }).SendAsync("ReceiveMessage", messageViewModel);
                 await _repository.SendMessage(messageViewModel);
                 return Ok(messageViewModel);
             }

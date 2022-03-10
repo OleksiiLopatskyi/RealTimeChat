@@ -18,7 +18,19 @@
 </div>
 @section Scripts{ 
 <script>
-    $(document).ready(function () {
+        $(document).ready(function () {
+
+            const connection = new signalR.HubConnectionBuilder()
+                .withUrl("/chathub")
+                .withAutomaticReconnect()
+                .build();
+
+            connection.start();
+
+            connection.on("ReceiveMessage", (data) => {
+                alert("Good");
+            });
+
         let users = $("#users");
         $.ajax({
             type: "get",
@@ -34,7 +46,8 @@
             }
         });
     })
-    function openChat(receiverId) {
+        function openChat(receiverId) {
+
         let messageList = $("#messageList");
         messageList.html("");
         $.ajax({
@@ -85,7 +98,7 @@
             dataType: "json",
             data: JSON.stringify(message),
             success: function (result) {
-                messages.append(`<li>${result.text} from: ${result.senderId}</li>`);
+               
             }
         })
     }
