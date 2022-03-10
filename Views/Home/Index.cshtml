@@ -3,18 +3,18 @@
     ViewData["Title"] = "Home Page";
 }
 
-<ul id="people">
+<ul id="users">
 
 </ul>
 
     @section Scripts{
         <script>
             $(document).ready(function () {
-                var usersList = $("#usersList");
+                var usersList = $("#users");
 
                 $.ajax({
                     method: "GET",
-                    url: "https://localhost:44314/api/data/users",
+                    url: "https://localhost:44314/home/getUsers",
                     success: function (json) {
                         $.each(json, function (index, user) {
                             usersList.append(`<li onclick="CreateChat(${user.id})">${user.username}</li>`);

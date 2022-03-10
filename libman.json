@@ -5,6 +5,17 @@
     {
       "library": "jquery-ajax-unobtrusive@3.2.6",
       "destination": "wwwroot/jquery-ajax-unobtrusive/"
+    },
+    {
+      "provider": "unpkg",
+      "library": "@microsoft/signalr@6.0.1",
+      "destination": "wwwroot/signalr/",
+      "files": [
+        "dist/browser/signalr.js",
+        "dist/browser/signalr.js.map",
+        "dist/browser/signalr.min.js",
+        "dist/browser/signalr.min.js.map"
+      ]
     }
   ]
 }

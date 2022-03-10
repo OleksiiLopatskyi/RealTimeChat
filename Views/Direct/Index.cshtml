@@ -1,0 +1,93 @@
+﻿<div style="width:100%;height:600px;display:flex;justify-content:center">
+    <div style="background-color:gray;width:25%;height:100%;">
+        <div id="users">
+         
+        </div>
+       
+    </div>
+    <div style="background-color:lightgray;width:75%;height:100%;">
+        <div style="width:100%;height:500px">
+            <ul id="messageList">
+            </ul>
+        </div>
+        <div>
+            <input id="messageText" type="text" placeholder="Message..." style="width:300px;"/>
+            <input onclick="sendMessage()" type="button" value="Send"/>
+        </div>
+    </div>
+</div>
+@section Scripts{ 
+<script>
+    $(document).ready(function () {
+        let users = $("#users");
+        $.ajax({
+            type: "get",
+            url: "https://localhost:44314/home/getUsers",
+            success: function (data) {
+                $.each(data, function (index, user) {
+                    users.append(`
+                    <div onclick="openChat(${user.id})" style="background-color:#a5a5a5; width: 100%; height: 60px; margin-bottom: 5px">
+                       <span>${user.username}</span>
+                    </div>
+                    `);
+                })
+            }
+        });
+    })
+    function openChat(receiverId) {
+        let messageList = $("#messageList");
+        messageList.html("");
+        $.ajax({
+            type: "get",
+            url: `https://localhost:44314/direct/getChat?receiverId=${receiverId}`,
+            success: function (chat) {
+                if (chat == null) {
+                    messageList.html(`<button onclick="startChat(${receiverId})">Start talking?</button>`);
+                }
+                else {
+                    history.pushState(null, "messenger",`https://localhost:44314/direct/index?chatId=${chat.id}`);
+                    $.each(chat.messages, function (index, message) {
+                        messageList.append(`<li>${message.text} from: ${message.senderId}</li>`);
+                    })
+                }
+               
+            }
+        })
+    }
+    function startChat(receiverId) {
+        let messageList = $("#messageList");
+        $.ajax({
+            type: "post",
+            url: `https://localhost:44314/direct/createChat?receiverId=${receiverId}`,
+            success: function (result) {
+                if (result === true) {
+                    messageList.html("");
+                } else {
+                    alert("Something went wrong");
+                }
+            }
+        })
+    }
+    function sendMessage() {
+        const params = new URLSearchParams(window.location.search);
+        var chatId = params.get("chatId");
+        let text = $("#messageText").val();
+        let messages = $("#messageList");
+        let message = {
+            "chatId": chatId,
+            "text": text
+        };
+
+        $.ajax({
+            type: "post",
+            url: "https://localhost:44314/direct/sendMessage",
+            contentType: "application/json",
+            dataType: "json",
+            data: JSON.stringify(message),
+            success: function (result) {
+                messages.append(`<li>${result.text} from: ${result.senderId}</li>`);
+            }
+        })
+    }
+</script>
+}

@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using RealTimeChat.Models;
 using RealTimeChat.Models.DatabaseContext;
+using RealTimeChat.ViewModels;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -35,9 +36,21 @@ namespace RealTimeChat.Services.Repository
             await _db.SaveChangesAsync();
             return chat;
         }
+        public async Task<IEnumerable<User>> GetAllUsers()
+        {
+            return await _db.Users.ToListAsync();
+        }
+        public async Task<Chat> FindChatByUsersId(int receiverId,int userId)
+        {
+            var chatExist = await _db.Chats.Include(i=>i.Messages).FirstOrDefaultAsync(i => i.UserFirstId == receiverId && i.UserSecondId == userId ||
+                                                                     i.UserFirstId==userId&&i.UserSecondId==receiverId);
 
-        public async Task<Chat> GetChatById(int chatId) => await _db.Chats.Include(i=>i.Messages).FirstOrDefaultAsync(i=>i.Id==chatId);
-
+            return chatExist;
+        }
+        public async Task<Chat> GetChatById(int chatId)
+        {
+            return await _db.Chats.FirstOrDefaultAsync(i=>i.Id==chatId);
+        }
         public async Task<int> GetReceiverId(int chatId,int userId)
         {
             var chat = await GetChatById(chatId);
@@ -46,14 +59,28 @@ namespace RealTimeChat.Services.Repository
             else
                 return chat.UserSecondId;
         }
-
-        public async Task<User> GetUserById(int userId) => await _db.Users.Include(i=>i.Chats).ThenInclude(i=>i.Messages).FirstOrDefaultAsync(i => i.Id == userId);
-       
-
+        public async Task<User> GetUserById(int userId) =>
+            await _db.Users.Include(i => i.Chats).ThenInclude(i => i.Messages).FirstOrDefaultAsync(i => i.Id == userId);
         public async Task<IEnumerable<Chat>> GetUserChats(int userId)
         {
             var user = await GetUserById(userId);
             return _db.Chats.Where(i=>i.UserFirstId==user.Id||i.UserSecondId==user.Id);
+        }
+        public async Task<Message> SendMessage(MessageViewModel model)
+        {
+            var chat = await GetChatById(model.ChatId);
+            var message = new Message()
+            {
+                ReceiverId = model.ReceiverId,
+                SenderId = model.SenderId,
+                SentTime = DateTime.Now,
+                Text = model.Text
+            };
+
+            chat.Messages.Add(message);
+            await _db.SaveChangesAsync();
+
+            return message;
         }
     }
 }
