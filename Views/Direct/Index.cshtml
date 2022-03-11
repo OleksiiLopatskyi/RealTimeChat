@@ -19,7 +19,7 @@
 @section Scripts{ 
 <script>
         $(document).ready(function () {
-
+            let messageList = $("#messageList");
             const connection = new signalR.HubConnectionBuilder()
                 .withUrl("/chathub")
                 .withAutomaticReconnect()
@@ -28,7 +28,11 @@
             connection.start();
 
             connection.on("ReceiveMessage", (data) => {
-                alert("Good");
+                const params = new URLSearchParams(window.location.search);
+                alert(data.chatId + ", " + params.get("chatId"));
+                if (data.chatId == params.get("chatId"))
+                    messageList.append(`<li>${data.text} from:${data.senderId}</li>`);
+                else alert("You have unread message from: " + data.senderId);
             });
 
         let users = $("#users");
