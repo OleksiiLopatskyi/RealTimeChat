@@ -21,19 +21,14 @@ namespace RealTimeChat.Controllers
         {
             _authRepository = new AuthRepository(shoppingContext);
         }
-        public IActionResult Index()
-        {
-
-            return View();
-        }
+       
         [HttpGet]
         [Route("[controller]/[action]")]
         public IActionResult Login()
         {
-            if(!User.Identity.IsAuthenticated)
-            return View();
+            if(!User.Identity.IsAuthenticated) return View();
 
-            return RedirectToAction("getChats","home");
+            return RedirectToAction("Index","direct");
         }
         [HttpPost]
         [Route("[controller]/[action]")]
@@ -47,7 +42,7 @@ namespace RealTimeChat.Controllers
                 return BadRequest("Login or password is incorrect");
 
             await Authenticate(foundUser.AuthInfo);
-            return RedirectToAction("getChats","home");
+            return RedirectToAction("Index","direct");
         }
 
         [HttpGet]

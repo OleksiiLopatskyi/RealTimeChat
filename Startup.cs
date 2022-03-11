@@ -33,7 +33,7 @@ namespace RealTimeChat
             services.AddSignalR();
             services.AddSingleton<IUserIdProvider, CustomUserIdProvider>();
             string connection = Configuration.GetConnectionString("DefaultConnection");
-            services.AddDbContext<ChatAppContext>(i => i.UseSqlServer(connection));
+            services.AddDbContext<ChatAppContext>(i => i.UseNpgsql(connection));
             services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme).AddCookie(c =>
             c.LoginPath = new Microsoft.AspNetCore.Http.PathString("/Account/Login"));
             services.AddTransient<IRepository, Repository>();

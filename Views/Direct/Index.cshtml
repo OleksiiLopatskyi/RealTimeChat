@@ -1,25 +1,93 @@
-﻿<div style="width:100%;height:600px;display:flex;justify-content:center">
-    <div style="background-color:gray;width:25%;height:100%;">
-        <div id="users">
-         
-        </div>
-       
-    </div>
-    <div style="background-color:lightgray;width:75%;height:100%;">
-        <div style="width:100%;height:500px">
-            <ul id="messageList">
-            </ul>
-        </div>
-        <div>
-            <input id="messageText" type="text" placeholder="Message..." style="width:300px;"/>
-            <input onclick="sendMessage()" type="button" value="Send"/>
+﻿<div class="chat-wrapper">
+    <div class="users"></div>
+    <div class="message-wrapper">
+        <ul class="messages"></ul>
+        <div class="message-form">
+            <input class="message-text" type="text" placeholder="Message..."/>
+            <input class="message-button" onclick="sendMessage()" type="button" value="Send"/>
         </div>
     </div>
 </div>
-@section Scripts{ 
-<script>
+
+<style>
+    *{
+        padding: 0;
+        margin: 0;
+    }
+    .chat-wrapper{
+        width:100%;
+        height:600px;
+        display:flex;
+        justify-content:center;
+    }
+    .users{
+        
+        background-color:gray;
+        width:25%;
+        height:100%; 
+    }
+    .message-wrapper{
+        background-color:lightgray;
+        width:75%;
+        height:100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+    .messages{
+        margin: 0;
+        flex: 1; overflow: auto;
+        list-style-type: none;
+        width:100%;
+        padding: 30px;
+        height: 90%;        
+    }
+    .messages li{
+        margin-bottom: 20px;
+        display: flex;
+        width: 100%;
+        justify-content: flex-start;
+    }
+    .messages li div{
+        padding: 10px;
+        border-radius: 8px;
+        width: fit-content;
+        background-color: beige;
+    }
+    .messages li.mymess{
+        justify-content: flex-end;
+    }
+    .messages li.mymess div{
+        background-color: lightblue;
+    }
+    .message-form{
+        padding: 30px 50px;
+        height:  10%;
+        background-color: red;
+        display: flex;
+        justify-content: space-around;
+        align-items: center;
+    }
+    .message-text{
+        width: 85%;
+    }
+    .message-button{
+        width: 13%;
+    }
+
+</style>
+
+@section Scripts{
+    <script>    
+        let userId;
         $(document).ready(function () {
-            let messageList = $("#messageList");
+            $.ajax({
+                type: "get",
+                url: "https://localhost:5001/home/getUserId",
+                success:  (userId) => localStorage.setItem('userId', userId)
+            });
+            userId = localStorage.getItem('userId');
+            let messageList = $(".messages");
             const connection = new signalR.HubConnectionBuilder()
                 .withUrl("/chathub")
                 .withAutomaticReconnect()
@@ -27,24 +95,26 @@
 
             connection.start();
 
-            connection.on("ReceiveMessage", (data) => {
+            connection.on("ReceiveMessage", (message) => {
                 const params = new URLSearchParams(window.location.search);
-                alert(data.chatId + ", " + params.get("chatId"));
-                if (data.chatId == params.get("chatId"))
-                    messageList.append(`<li>${data.text} from:${data.senderId}</li>`);
-                else alert("You have unread message from: " + data.senderId);
+                if (message.chatId == params.get("chatId")){
+                    messageList.append(`<li class="${message.senderId == userId ? 'mymess' : ''}">
+                        <div>${message.text} from:${message.senderId}</div>
+                    </li>`);
+                }
+                else alert("You have unread message from: " + message.senderId);
             });
 
-        let users = $("#users");
+        let users = $(".users");
         $.ajax({
             type: "get",
-            url: "https://localhost:44314/home/getUsers",
+            url: "https://localhost:5001/home/getUsers",
             success: function (data) {
                 $.each(data, function (index, user) {
                     users.append(`
-                    <div onclick="openChat(${user.id})" style="background-color:#a5a5a5; width: 100%; height: 60px; margin-bottom: 5px">
-                       <span>${user.username}</span>
-                    </div>
+                        <div onclick="openChat(${user.id})">
+                           <span>${user.username}</span>
+                        </div>
                     `);
                 })
             }
@@ -52,19 +122,21 @@
     })
         function openChat(receiverId) {
 
-        let messageList = $("#messageList");
+        let messageList = $(".messages");
         messageList.html("");
         $.ajax({
             type: "get",
-            url: `https://localhost:44314/direct/getChat?receiverId=${receiverId}`,
+            url: `https://localhost:5001/direct/getChat?receiverId=${receiverId}`,
             success: function (chat) {
                 if (chat == null) {
                     messageList.html(`<button onclick="startChat(${receiverId})">Start talking?</button>`);
                 }
                 else {
-                    history.pushState(null, "messenger",`https://localhost:44314/direct/index?chatId=${chat.id}`);
+                    history.pushState(null, "messenger",`https://localhost:5001/direct/index?chatId=${chat.id}`);
                     $.each(chat.messages, function (index, message) {
-                        messageList.append(`<li>${message.text} from: ${message.senderId}</li>`);
+                        messageList.append(`<li class="${message.senderId == userId ? 'mymess' : ''}">
+                            <div>${message.text} from: ${message.senderId}</div>
+                        </li>`);
                     })
                 }
                
@@ -72,10 +144,10 @@
         })
     }
     function startChat(receiverId) {
-        let messageList = $("#messageList");
+        let messageList = $(".messages");
         $.ajax({
             type: "post",
-            url: `https://localhost:44314/direct/createChat?receiverId=${receiverId}`,
+            url: `https://localhost:5001/direct/createChat?receiverId=${receiverId}`,
             success: function (result) {
                 if (result === true) {
                     messageList.html("");
@@ -88,8 +160,8 @@
     function sendMessage() {
         const params = new URLSearchParams(window.location.search);
         var chatId = params.get("chatId");
-        let text = $("#messageText").val();
-        let messages = $("#messageList");
+        let text = $(".message-text").val();
+        let messages = $(".messages");
         let message = {
             "chatId": chatId,
             "text": text
@@ -97,7 +169,7 @@
 
         $.ajax({
             type: "post",
-            url: "https://localhost:44314/direct/sendMessage",
+            url: "https://localhost:5001/direct/sendMessage",
             contentType: "application/json",
             dataType: "json",
             data: JSON.stringify(message),
